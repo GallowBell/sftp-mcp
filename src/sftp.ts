@@ -24,7 +24,11 @@ export const SSH_ALGORITHMS: Algorithms = {
 const LIST_TYPE: Record<string, EntryType> = { '-': 'file', d: 'dir', l: 'link' };
 
 async function withClient<T>(h: SftpHost, fn: (c: SftpClient) => Promise<T>): Promise<T> {
-  const client = new SftpClient();
+  const client = new SftpClient('sftp-mcp', {
+    error: (err: unknown) => console.error(`sftp-mcp: ${err instanceof Error ? err.message : String(err)}`),
+    end: () => {},
+    close: () => {},
+  });
   let hostKeyRejected = false;
   const auth =
     h.auth.type === 'password' ? { password: h.auth.password }
@@ -37,6 +41,8 @@ async function withClient<T>(h: SftpHost, fn: (c: SftpClient) => Promise<T>): Pr
       username: h.username,
       ...auth,
       readyTimeout: h.connectTimeoutMs,
+      keepaliveInterval: 10000,
+      keepaliveCountMax: 3,
       algorithms: SSH_ALGORITHMS,
       hostVerifier: (key: Buffer) => {
         const ok = h.hostKeySha256
@@ -48,6 +54,7 @@ async function withClient<T>(h: SftpHost, fn: (c: SftpClient) => Promise<T>): Pr
     });
   } catch (err) {
     await client.end().catch(() => {});
+    (client as unknown as { client: { end: () => void } }).client.end();
     if (hostKeyRejected) throw new Error(`Host key verification failed for ${h.name}`);
     throw err;
   }
