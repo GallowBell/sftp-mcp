@@ -69,7 +69,7 @@ export function loadConfig(file: string | undefined, env: NodeJS.ProcessEnv = pr
 
     let localRoot: string;
     try {
-      localRoot = realpathSync(expandHome(h.localRoot));
+      localRoot = realpathSync.native(expandHome(h.localRoot));
     } catch {
       throw new Error(`Host ${name}: localRoot does not exist`);
     }
