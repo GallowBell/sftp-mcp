@@ -18,11 +18,13 @@ Relative `localPath` resolves against the host's `localRoot`; relative `remotePa
 
 ```bash
 npm install && npm run build
+export PROD_KEY_PASS=...
 claude mcp add sftp-mcp \
   -e SFTP_MCP_CONFIG=$HOME/.config/sftp-mcp/hosts.json \
-  -e PROD_KEY_PASS=... \
   -- node /absolute/path/to/sftp-mcp/dist/index.js
 ```
+
+Export secret env vars (like `PROD_KEY_PASS`) in the shell that launches Claude Code, or source them from a secrets manager. Do not pass them via `-e`: Claude Code stores `-e` values in plaintext in `~/.claude.json`, or in a committable `.mcp.json` with `--scope project`.
 
 ## Config
 
@@ -83,7 +85,7 @@ ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 - **Overwrite:** off by default. Uploads write `.<name>.<random>.part` then rename.
 - **Errors:** configured secret values are redacted from tool errors and logs. Logs go to stderr.
 
-**Known limits:** remote symlinks inside `remoteRoot` that point elsewhere are not detected (server-side). `known_hosts` wildcard/negated patterns are ignored. Existence check and rename are not atomic together.
+**Known limits:** remote symlinks inside `remoteRoot` that point elsewhere are not detected (server-side). `known_hosts` wildcard/negated patterns are ignored. Existence check and rename are not atomic together. FTPS overwrite needs a server whose RNTO replaces existing files (e.g. not IIS); SFTP overwrite needs the OpenSSH posix-rename extension. Integration tests need `openssl`, `ssh-keygen`, `ssh-agent`, and `ssh-add` on the host.
 
 ## Development
 
