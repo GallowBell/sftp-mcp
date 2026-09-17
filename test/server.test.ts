@@ -82,3 +82,26 @@ test('connection failure returns an error without secrets', async () => {
   assert.equal(r.isError, true);
   assert.ok(!r.text.includes('hunter2-secret'));
 });
+
+test('error text that echoes a secret is redacted', async () => {
+  const dnsSecret = 'hunter2-secret.invalid';
+  const localRoot = await realpath(await mkdtemp(path.join(tmpdir(), 'sftp-mcp-srv-')));
+  const hosts = new Map<string, HostConfig>([
+    ['dns', {
+      host: dnsSecret, port: 1, username: 'u', remoteRoot: '/upload', localRoot,
+      allowOverwrite: false, connectTimeoutMs: 5000,
+      name: 'dns', protocol: 'sftp', auth: { type: 'password', password: 'irrelevant' },
+      hostKeySha256: ['SHA256:' + 'A'.repeat(43)],
+    }],
+  ]);
+  const server = createServer({ hosts, secrets: [dnsSecret] });
+  const [serverSide, clientSide] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverSide);
+  const client = new Client({ name: 'test', version: '0.0.0' });
+  await client.connect(clientSide);
+
+  const r = await call(client, 'stat', { host: 'dns', remotePath: 'x' });
+  assert.equal(r.isError, true);
+  assert.ok(r.text.includes('***'));
+  assert.ok(!r.text.includes(dnsSecret));
+});
