@@ -7,3 +7,15 @@ services:
       - ./test/fixtures:/fixtures:ro
       - ./test/fixtures/user_ed25519.pub:/home/tester/.ssh/keys/user_ed25519.pub:ro
       - ./test/docker/sftp-init.sh:/etc/sftp.d/10-host-key.sh:ro
+  ftps-explicit:
+    build: { context: ./test/docker, dockerfile: vsftpd.Dockerfile }
+    ports: ["2121:21", "21100-21110:21100-21110"]
+    volumes:
+      - ./test/fixtures:/certs:ro
+      - ./test/docker/vsftpd-explicit.conf:/etc/vsftpd/vsftpd.conf:ro
+  ftps-implicit:
+    build: { context: ./test/docker, dockerfile: vsftpd.Dockerfile }
+    ports: ["2990:990", "21200-21210:21200-21210"]
+    volumes:
+      - ./test/fixtures:/certs:ro
+      - ./test/docker/vsftpd-implicit.conf:/etc/vsftpd/vsftpd.conf:ro
