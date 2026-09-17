@@ -51,9 +51,17 @@ async function statWith(c: Client, remotePath: string): Promise<StatResult> {
     throw err;
   }
   const found = items.find((i) => i.name === path.posix.basename(remotePath));
-  if (!found) return { exists: false };
-  const { type, size, modifiedAt } = toEntry(found);
-  return { exists: true, type, size, modifiedAt };
+  if (found) {
+    const { type, size, modifiedAt } = toEntry(found);
+    return { exists: true, type, size, modifiedAt };
+  }
+  try {
+    const size = await c.size(remotePath);
+    return { exists: true, type: 'file', size, modifiedAt: null };
+  } catch (err) {
+    if (err instanceof ftp.FTPError && err.code === 550) return { exists: false };
+    throw err;
+  }
 }
 
 export function stat(h: FtpsHost, remotePath: string): Promise<StatResult> {

@@ -61,6 +61,12 @@ describe('ftps integration', { skip: process.env.INTEGRATION !== '1' }, () => {
     assert.ok(s.exists && s.size === 16);
   });
 
+  test('dotfile overwrite is refused even when hidden from LIST', async () => {
+    const remote = `/upload/.hidden-${Date.now()}-${Math.random().toString(16).slice(2)}.txt`;
+    await ftps.upload(host(), file, remote, 10);
+    await assert.rejects(ftps.upload(host(), file, remote, 10), /overwrite is disabled/);
+  });
+
   test('stat of missing path and missing parent', async () => {
     assert.deepEqual(await ftps.stat(host(), unique('missing.txt')), { exists: false });
     assert.deepEqual(await ftps.stat(host(), '/upload/no-such-dir/x.txt'), { exists: false });
